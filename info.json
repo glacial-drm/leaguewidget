@@ -1,0 +1,86 @@
+{
+  "data": {
+    "dynamic": [
+      {
+        "type": 1,
+        "name": "gamename#tagline",
+        "value": "Glacial#zelda"
+      },
+      {
+        "type": 1,
+        "name": "rank-solo-duo",
+        "value": "Bronze"
+      },
+      {
+        "type": 3,
+        "name": "img-solo-duo",
+        "value": {
+          "url": "<URL to img-solo-duo.png>"
+        }
+      },
+      {
+        "type": 3,
+        "name": "champ-image",
+        "value": {
+          "url": "<URL to champ-image.png>"
+        }
+      },
+      {
+        "type": 1,
+        "name": "top-champion",
+        "value": "Gwen"
+      },
+      {
+        "type": 3,
+        "name": "img-top-champion",
+        "value": {
+          "url": "<URL to img-top-champion.png>"
+        }
+      },
+      {
+        "type": 1,
+        "name": "total-mastery",
+        "value": "67"
+      },
+      {
+        "type": 1,
+        "name": "rank-flex",
+        "value": "Iron"
+      },
+      {
+        "type": 3,
+        "name": "img-flex",
+        "value": {
+          "url": "<URL to img-flex.png>"
+        }
+      },
+      {
+        "type": 2,
+        "name": "games-won",
+        "value": 20
+      },
+      {
+        "type": 2,
+        "name": "games-played",
+        "value": 200
+      },
+      {
+        "type": 2,
+        "name": "time-played",
+        "value": 9999999
+      },
+      {
+        "type": 1,
+        "name": "top-mastery",
+        "value": "13"
+      },
+      {
+        "type": 3,
+        "name": "icon-mastery",
+        "value": {
+          "url": "<URL to icon-mastery.png>"
+        }
+      }
+    ]
+  }
+}
