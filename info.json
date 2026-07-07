@@ -15,14 +15,14 @@
         "type": 3,
         "name": "img-solo-duo",
         "value": {
-          "url": "<URL to img-solo-duo.png>"
+          "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
         }
       },
       {
         "type": 3,
         "name": "champ-image",
         "value": {
-          "url": "<URL to champ-image.png>"
+          "url": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Gwen_0.jpg"
         }
       },
       {
@@ -34,7 +34,7 @@
         "type": 3,
         "name": "img-top-champion",
         "value": {
-          "url": "<URL to img-top-champion.png>"
+          "url": "https://ddragon.leagueoflegends.com/cdn/16.13.1/img/champion/Gwen.png"
         }
       },
       {
@@ -51,7 +51,7 @@
         "type": 3,
         "name": "img-flex",
         "value": {
-          "url": "<URL to img-flex.png>"
+          "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
         }
       },
       {
@@ -78,7 +78,7 @@
         "type": 3,
         "name": "icon-mastery",
         "value": {
-          "url": "<URL to icon-mastery.png>"
+          "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
         }
       }
     ]

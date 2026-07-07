@@ -1,6 +1,6 @@
 # This example requires the 'message_content' intent.
 
-import discord, os
+import discord, os, json, requests
 import LeagueData
 from dotenv import load_dotenv
 
@@ -9,6 +9,7 @@ load_dotenv(override=False)
 data = None
 
 bot_token = os.getenv("BOT_TOKEN")
+application_id = os.getenv("APPLICATION_ID")
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -18,15 +19,24 @@ tree = discord.app_commands.CommandTree(client)
 
 @client.event
 async def on_ready():
+    await tree.sync()
     print(f'We have logged in as {client.user}')
 
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
 
-class setupButtons(discord.ui.view):
+    if message.content.startswith('hello'):
+        await message.channel.send('Hello!')
+
+
+class setupButtons(discord.ui.View):
 
     def __init__(self, timeout):
         super().__init__(timeout=timeout)
 
-    def load_other_buttons():
+    def load_other_buttons(self):
 
         @discord.ui.button()
         async def load_button(self):
@@ -42,7 +52,7 @@ class setupButtons(discord.ui.view):
 async def setup(ctx, gamename:str, tagline:str):
     
     view = setupButtons(timeout=180)
-    view.add_item(discord.ui.button(
+    view.add_item(discord.ui.Button(
         label = "Authorize", 
         style = discord.ButtonStyle.link,
         url = "https://discord.com/oauth2/authorize?client_id=1522907002110742678&response_type=code&redirect_uri=https%3A%2F%2Fdiscord.com&scope=connections+openid+sdk.social_layer"
@@ -56,24 +66,52 @@ async def setup(ctx, gamename:str, tagline:str):
         # needs discord connection access (currently unsupported via discord api: https://github.com/discord/discord-api-docs/discussions/8430)
 
     # create database that takes gamename, tagline and output from LeagueData class ----------------------------------
-    data = LeagueData.LeagueData(gamename, tagline)
+    try:
+        data = LeagueData.LeagueData(gamename, tagline)
+    except:
+        await ctx.response.send_message("Error: gamename#tagline not found.")
 
     await ctx.response.send_message("Please authorize the bot!", view=view)
 
 @tree.command(
     name="refresh",
-    description="refresh the widget on your profile "
+    description="reload the widget on your profile. use after having changed any of the fields",
 )
-async def refresh():
+async def refresh(ctx):
     
-    # create payload
+    # create payload/content using json
         # skip the username field?
-    # create content using json
+            # username field corresponds to making an application identity, relevant only for a self-made widget (?)
+
+        # our python patch function takes key value pairs, just parse json
+    user_json = None
+    with open("info.json") as json_data:
+        user_json = json.load(json_data)
+    
     # specify url
+    patch_url = f"https://discord.com/api/v9/applications/{application_id}/users/{ctx.user.id}/identities/0/profile"
+
     # create httpclient
+    header = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bot {bot_token}'
+    }
+    
+    print(type(user_json))
     # use httpclient to patchasync
-    patch_url = f"https://discord.com/api/v9/applications/{discordApplicationId}/users/{discordUserId}/identities/{identityId}/profile"
-    pass
+    try:
+        response = requests.patch(url=patch_url, json=user_json, headers=header)
+        match response.status_code:
+            case 201:
+                await ctx.response.send_message("Newly added")
+            case 204:
+                await ctx.response.send_message("Already added")
+            case _:
+                print(f"Error: response code {response.status_code} {response.content}")
+            
+    except Exception as e:
+        print(f"Error: failed to refresh {repr(e)}")
+
 
 async def clear(): # clear user's entry in db
     pass

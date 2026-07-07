@@ -29,24 +29,41 @@ class LeagueData:
         self.__posts["account"] = call(self.__urls["account"])
         self.__puuid = self.__posts["account"]["puuid"]
         
+    
+    def get_time_played(self): # make sure it's in ms
+        pass
 
+    def get_total_games_won(self):
+        pass
+    def get_total_games_played(self):
+        pass
 
+    def get_rank_flex(self):
+        pass
+    def get_rank_solo_duo_(self):
+        pass
+    
+    def get_total_mastery(self):
+        self.__urls["total-mastery"] = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/scores/by-puuid/{self.__puuid}?api_key={self.__api_key}"
+        totalMastery = call(self.__urls["total-mastery"])
+        
+        return totalMastery
 
-# now we can search for champ's assets
+    def get_top_champ_mastery(self):
+        pass
+    def get_top_champ_name(self):
+        
+        top_champ_id = self.get_top_champ_id(self.__puuid)
+        
+        return self.champ_id_to_name(top_champ_id)    
+    def get_top_champ_id(self):
+        self.__urls["top-mastery"] = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{self.__puuid}?api_key={self.__api_key}"
 
-# fields in widget:
-    # ez
-        # 1. highest mastery champ
-        # 2. total mastery (another api call)
+        self.__posts["top-mastery"] = call(self.__urls["top-mastery"])
 
-    # idk yet (check playlist)
-        # 3. total play time
-        # 4. 
-        # 5. ranked rank
-        # 6. ranked flex rank
-
-
-
+        id = str(self.__posts["top-mastery"][0]["championId"])
+        return id
+    
     def champ_id_to_name(self, id: str):
         champ_json, name = "", ""
         try:
@@ -67,20 +84,6 @@ class LeagueData:
 
         name = next(champ for champ in champ_json if champ_json[champ]["key"] == id)
         return name
-
-    def get_top_champ_name(self):
-        
-        top_champ_id = self.get_top_champ_id(self.__puuid)
-        
-        return self.champ_id_to_name(top_champ_id)
-        
-    def get_top_champ_id(self):
-        self.__urls["mastery"] = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-self.__puuid/{self.__puuid}?api_key={self.__api_key}"
-
-        self.__posts["mastery"] = call(self.__urls["mastery"])
-
-        id = str(self.__posts["mastery"][0]["championId"])
-        return id
 
     def __set_gamename(self, gamename):
         self.__gamename = gamename
@@ -109,3 +112,5 @@ def call(url: str):
         return None
 
     
+x = LeagueData("Glacial", "zelda")
+print(x.get_total_mastery())
