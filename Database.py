@@ -8,30 +8,6 @@ class LeagueDB: # store data with respect to users discord id
         self.database =  self.client["LeagueWidgetDB"]
         self.collection = self.database['users']
 
-    def create_user(self, discordID: str, gamename: str, tagline: str):
-
-        if(self.find_user_by_discordID(discordID)):
-            return f"You have already linked a riot account. Try the update or delete commands, or help for more info"
-        else:
-            self.collection.insert_one({
-                "discordID": discordID,
-                "gamename": gamename,
-                "tagline": tagline,
-                
-                # Other stats
-                "favourite-champion": "",
-                "top-champion": "",
-                "top-mastery": "",
-                "total-mastery": "",
-
-                "rank-solo-duo": "",
-                "rank-flex": "",
-
-                "time-played": "",
-                "games-played": "",
-                "games-won": ""
-                })
-
 
     def find_user_by_discordID(self, discordID: str):
         
@@ -41,6 +17,9 @@ class LeagueDB: # store data with respect to users discord id
             print(f"Exception: user not found. {e}")
             return None
         return user
+    
+    def get_field_by_discordID(self, discordID: str, field: str):
+        return self.__db.client[discordID][field]
     
 # db = LeagueDB()
 # db.collection.insert_one({"discordID": "1234"})
