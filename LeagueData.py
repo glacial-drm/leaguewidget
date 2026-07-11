@@ -16,6 +16,101 @@ class LeagueData:
 
         self.__db = Database.LeagueDB()
 
+    def discordID_to_discordJSON(self, discordID: str):
+        
+        user = self.__db.find_user_by_discordID(discordID)
+        
+        # Image elements
+
+        json = {
+        "data": {
+            "dynamic": [
+            {
+                "type": 1,
+                "name": "gamename#tagline",
+                "value": f"{user['gamename']}#{user['tagline']}"
+            },
+            {
+                "type": 1,
+                "name": "rank-solo-duo",
+                "value": f"{user['rank-solo-duo']}"
+            },
+            {
+                "type": 3,
+                "name": "img-solo-duo",
+                "value": {
+                "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
+                }
+            },
+            {
+                "type": 3,
+                "name": "champ-image",
+                "value": {
+                "url": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Gwen_0.jpg"
+                }
+            },
+            {
+                "type": 1,
+                "name": "top-champion",
+                "value": f"{user['top-champion']}"
+            },
+            {
+                "type": 3,
+                "name": "img-top-champion",
+                "value": {
+                "url": "https://ddragon.leagueoflegends.com/cdn/16.13.1/img/champion/Gwen.png"
+                }
+            },
+            {
+                "type": 1,
+                "name": "total-mastery",
+                "value": f"{user['total-mastery']}"
+            },
+            {
+                "type": 1,
+                "name": "rank-flex",
+                "value": f"{user['rank-flex']}"
+            },
+            {
+                "type": 3,
+                "name": "img-flex",
+                "value": {
+                "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
+                }
+            },
+            {
+                "type": 2,
+                "name": "games-won",
+                "value": f"{user['games-won']}"
+            },
+            {
+                "type": 2,
+                "name": "games-played",
+                "value": f"{user['games-played']}"
+            },
+            {
+                "type": 1,
+                "name": "summoner-level",
+                "value": f"{user['summoner-level']}",
+            },
+            {
+                "type": 1,
+                "name": "top-mastery",
+                "value": f"{user['top-mastery']}",
+            },
+            {
+                "type": 3,
+                "name": "icon-mastery",
+                "value": {
+                "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
+                }
+            }
+            ]
+        }
+        }
+
+        print(user)
+
     def create_user(self, discordID: str, gamename: str, tagline: str):
 
         if(self.__db.find_user_by_discordID(discordID)): # if user's discordID exists in database
@@ -38,20 +133,7 @@ class LeagueData:
                 "tagline": tagline,
                 
                 # API info
-                "puuid": puuid,
-
-                # Displayed stats
-                "favourite-champion": "",
-                "top-champion": "",
-                "top-mastery": "",
-                "total-mastery": "",
-
-                "rank-solo-duo": "",
-                "rank-flex": "",
-
-                "time-played": "",
-                "games-played": "",
-                "games-won": ""
+                "puuid": puuid
                 })
             
             self.update_user(discordID)
@@ -62,40 +144,96 @@ class LeagueData:
         puuid = user["puuid"]
 
         newValues = {"$set": {
-                
-                "favourite-champion": "",
+                # Displayed stats
                 "top-champion": self.get_top_champ_name(puuid),
-                "top-mastery": "",
+                "top-mastery": self.get_top_champ_mastery(puuid),
                 "total-mastery": self.get_total_mastery(puuid),
 
-                "rank-solo-duo": "",
-                "rank-flex": "",
+                "rank-solo-duo": self.get_rank_solo_duo(puuid),
+                "rank-flex": self.get_rank_flex(puuid),
 
-                "time-played": "",
-                "games-played": "",
-                "games-won": ""
+                "summoner-level": self.get_summoner_level(puuid),
+                "games-played": self.get_total_games_played(puuid),
+                "games-won": self.get_total_games_won(puuid)
         }}
         
         self.__db.collection.update_one({"discordID": user["discordID"]}, newValues)
         
 
 
-    def get_time_played(self): # make sure it's in ms
-        pass
+    def get_summoner_level(self, puuid: str): # make sure it's in ms
+        summonerURL = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={self.__api_key}"
 
-    def get_total_games_won(self):
-        pass
+        summoner = call(summonerURL)
 
-    def get_total_games_played(self):
-        pass
+        return summoner["summonerLevel"]
+
+    def get_total_games_won(self, puuid: str):
+        rankURL = f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}?api_key={self.__api_key}"
+        gamesWon = 0
+
+        try:
+            soloDuo = next(queue for queue in call(rankURL) if queue["queueType"] == "RANKED_SOLO_5x5")
+            
+            gamesWon += soloDuo["wins"]
+        except:
+            pass
+
+        try:
+            flex = next(queue for queue in call(rankURL) if queue["queueType"] == "RANKED_FLEX_SR")
+            
+            gamesWon += flex["wins"]
+        except:
+            pass
+
+        return str(gamesWon)
+
+    def get_total_games_played(self, puuid: str):
+        rankURL = f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}?api_key={self.__api_key}"
+        gamesPlayed = 0
+
+        try:
+            soloDuo = next(queue for queue in call(rankURL) if queue["queueType"] == "RANKED_SOLO_5x5")
+            
+            gamesPlayed += soloDuo["wins"]
+            gamesPlayed += soloDuo["losses"]
+        except:
+            pass
+
+        try:
+            flex = next(queue for queue in call(rankURL) if queue["queueType"] == "RANKED_FLEX_SR")
+            
+            gamesPlayed += flex["wins"]
+            gamesPlayed += flex["losses"]
+        except:
+            pass
+
+        return str(gamesPlayed)
 
 
 
-    def get_rank_flex(self):
-        pass
+    def get_rank_flex(self, puuid: str):
+        rankURL = f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}?api_key={self.__api_key}"
+        flex = None
 
-    def get_rank_solo_duo_(self):
-        pass
+        try:
+            flex = next(queue for queue in call(rankURL) if queue["queueType"] == "RANKED_FLEX_SR")
+        except:
+            return(f"Unranked")
+        
+        
+        return f"{flex['tier']} {flex['rank']}"
+
+    def get_rank_solo_duo(self, puuid: str):
+        rankURL = f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}?api_key={self.__api_key}"
+        solo_duo = None
+
+        try:
+            solo_duo = next(queue for queue in call(rankURL) if queue["queueType"] == "RANKED_SOLO_5x5")
+        except:
+            return(f"Unranked")
+        
+        return f"{solo_duo['tier']} {solo_duo['rank']}"
     
 
 
@@ -107,12 +245,13 @@ class LeagueData:
         return totalMastery
 
     def get_top_champ_mastery(self, puuid: str):
-        topMasteryURL = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}?api_key={self.__api_key}"
+        
+        topMasteryURL = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/top?count=1&api_key={self.__api_key}"
         
         topChampion = call(topMasteryURL)[0]
-        # mastery = str(topChampion["mastery"])
+        mastery = str(topChampion["championLevel"])
         
-        # return mastery
+        return mastery
     
     def get_top_champ_name(self, puuid: str):
         
@@ -129,7 +268,7 @@ class LeagueData:
         
         return id
     
-    def champ_id_to_name(self, id: str):
+    def champ_id_to_name(self, champId: str):
         
         championsURL, champ_json, name = "", "", ""
         
@@ -149,7 +288,7 @@ class LeagueData:
         except:
             print('Exception: failed to load champ json data')
 
-        name = next(champ for champ in champ_json if champ_json[champ]["key"] == id)
+        name = next(champ for champ in champ_json if champ_json[champ]["key"] == champId)
         return name
 
 
@@ -171,4 +310,5 @@ def call(url: str):
 
     
 x = LeagueData()
-x.create_user("414120508632596482","Glacial", "zelda")
+x.create_user("414120508632596482", "Glacial", "Zelda")
+# x.discordID_to_JSON("414120508632596482")
