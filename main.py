@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv(override=False)
 
-data = None
+data = LeagueData.LeagueData()
 
 bot_token = os.getenv("BOT_TOKEN")
 application_id = os.getenv("APPLICATION_ID")
@@ -66,10 +66,6 @@ async def setup(ctx, gamename:str, tagline:str):
         # needs discord connection access (currently unsupported via discord api: https://github.com/discord/discord-api-docs/discussions/8430)
 
     # create database that takes gamename, tagline and output from LeagueData class ----------------------------------
-    try:
-        data = LeagueData.LeagueData(gamename, tagline)
-    except:
-        await ctx.response.send_message("Error: gamename#tagline not found.")
 
     await ctx.response.send_message("Please authorize the bot!", view=view)
 

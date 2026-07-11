@@ -65,9 +65,9 @@
         "value": 200
       },
       {
-        "type": 2,
-        "name": "time-played",
-        "value": 9999999
+        "type": 1,
+        "name": "summoner-level",
+        "value": 1
       },
       {
         "type": 1,
