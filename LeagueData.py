@@ -46,7 +46,7 @@ class LeagueData:
                 "type": 3,
                 "name": "champ-image",
                 "value": {
-                "url": "https://ddragon.leagueoflegends.com/cdn/img/champion/loading/Gwen_0.jpg"
+                "url": f"https://ddragon.leagueoflegends.com/cdn/img/champion/loading/{user['favourite-champion']}_{user['skinID-favourite-champion']}.jpg"
                 }
             },
             {
@@ -58,7 +58,7 @@ class LeagueData:
                 "type": 3,
                 "name": "img-top-champion",
                 "value": {
-                "url": "https://ddragon.leagueoflegends.com/cdn/16.13.1/img/champion/Gwen.png"
+                "url": f"https://ddragon.leagueoflegends.com/cdn/16.13.1/img/champion/{user['top-champion']}.png"
                 }
             },
             {
@@ -109,7 +109,7 @@ class LeagueData:
         }
         }
 
-        print(user)
+        return json
 
     def create_user(self, discordID: str, gamename: str, tagline: str):
 
@@ -159,7 +159,30 @@ class LeagueData:
         
         self.__db.collection.update_one({"discordID": user["discordID"]}, newValues)
         
+    
 
+    def get_champion_skin_list(self, championName):
+        
+        championUrl = f"https://ddragon.leagueoflegends.com/cdn/16.13.1/data/en_US/champion/{championName}.json"
+
+        try:
+            championSkins = [(skin['num'], skin['name']) for skin in call(championUrl)['data'][championName]['skins'] if "(" not in skin["name"]]
+        except:
+            print(f"Error: Champion name not found (skin search)")
+            return None
+
+        return championSkins
+
+    def set_favourite_champion(self, discordID: str, championName: str, skinID: str):
+        user = self.__db.find_user_by_discordID(discordID)
+
+        newValues = {"$set": {
+                # Displayed stats
+                "favourite-champion": championName,
+                "skinID-favourite-champion": skinID
+        }}
+        
+        self.__db.collection.update_one({"discordID": user["discordID"]}, newValues)
 
     def get_summoner_level(self, puuid: str): # make sure it's in ms
         summonerURL = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={self.__api_key}"
@@ -311,4 +334,6 @@ def call(url: str):
     
 x = LeagueData()
 x.create_user("414120508632596482", "Glacial", "Zelda")
+print(x.get_champion_skin_list("Gwen"))
+x.set_favourite_champion("414120508632596482", 'Gwen', '11')
 # x.discordID_to_JSON("414120508632596482")
