@@ -13,8 +13,8 @@ class LeagueDB: # store data with respect to users discord id
         
         try:
             user = next(user for user in self.collection.find({"discordID": discordID}))
-        except Exception as e:
-            print(f"Exception: user not found. {e}")
+        except:
+            print(f"Exception: userID: {discordID} not found. (database)")
             return None
         return user
     

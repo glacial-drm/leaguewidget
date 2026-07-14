@@ -114,7 +114,7 @@ class LeagueData:
     def create_user(self, discordID: str, gamename: str, tagline: str):
 
         if(self.__db.find_user_by_discordID(discordID)): # if user's discordID exists in database
-            return f"A riot account is already linked to this discord account. Try the update or delete commands, or help for more info"
+            raise Exception("User already has account linked")
         else:
             self.link_riot_to_discordID(discordID, gamename, tagline)
 
@@ -174,6 +174,16 @@ class LeagueData:
         return championSkins
 
     def set_favourite_champion(self, discordID: str, championName: str, skinID: str):
+        
+        # Check champion exists
+        try:
+            champURL = f"https://ddragon.leagueoflegends.com/cdn/16.13.1/data/en_US/champion/{championName.capitalize()}.json"
+            call(champURL)
+        except Exception as e:
+            
+            print(f"Exception {e}: Champion not found (favourite champion)")
+            return None
+
         user = self.__db.find_user_by_discordID(discordID)
 
         newValues = {"$set": {
@@ -324,7 +334,7 @@ def call(url: str):
             posts = response.json()
             return posts
         else:
-            print('Error:', response.status_code)
+            print(f'Error {response.status_code} accessing: {url}')
             return None
     except requests.exceptions.RequestException as e:
         
@@ -333,7 +343,7 @@ def call(url: str):
 
     
 x = LeagueData()
-x.create_user("414120508632596482", "Glacial", "Zelda")
-print(x.get_champion_skin_list("Gwen"))
-x.set_favourite_champion("414120508632596482", 'Gwen', '11')
+# x.create_user("414120508632596482", "Glacial", "Zelda")
+# print(x.get_champion_skin_list("Gwen"))
+# x.set_favourite_champion("414120508632596482", 'Gwen', '11')
 # x.discordID_to_JSON("414120508632596482")

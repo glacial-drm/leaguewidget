@@ -51,11 +51,12 @@ class setupButtons(discord.ui.View):
 )
 async def setup(ctx, gamename:str, tagline:str):
     
+    
     view = setupButtons(timeout=180)
     view.add_item(discord.ui.Button(
         label = "Authorize", 
         style = discord.ButtonStyle.link,
-        url = "https://discord.com/oauth2/authorize?client_id=1522907002110742678&response_type=code&redirect_uri=https%3A%2F%2Fdiscord.com&scope=connections+openid+sdk.social_layer"
+        url = "https://discord.com/oauth2/authorize?client_id=1522907002110742678&response_type=token&redirect_uri=https%3A%2F%2Fdiscord.com&scope=connections+openid+sdk.social_layer"
     ))
     
     view.load_other_buttons() # load other buttons after auth button
@@ -66,8 +67,14 @@ async def setup(ctx, gamename:str, tagline:str):
         # needs discord connection access (currently unsupported via discord api: https://github.com/discord/discord-api-docs/discussions/8430)
 
     # create database that takes gamename, tagline and output from LeagueData class ----------------------------------
-
-    await ctx.response.send_message("Please authorize the bot!", view=view)
+    
+    try:
+        data.create_user(discordID=ctx.user.id, gamename=gamename, tagline=tagline)
+    except:
+        await ctx.response.send_message(f"A riot account is already linked to this discord account. Try the update or delete commands, or help for more info")
+        return
+    
+    await ctx.response.send_message(f"Riot Account: {gamename}#{tagline} linked to Discord Account: {ctx.user.name}\n\nPlease also authorize the bot using the button below! Then add the widget to your profile!", view=view)
 
 @tree.command(
     name="refresh",
@@ -80,9 +87,11 @@ async def refresh(ctx):
             # username field corresponds to making an application identity, relevant only for a self-made widget (?)
 
         # our python patch function takes key value pairs, just parse json
-    user_json = None
-    with open("info.json") as json_data:
-        user_json = json.load(json_data)
+    try:
+        user_json = data.discordID_to_discordJSON(ctx.user.id)
+    except:
+        await ctx.response.send_message("Please setup the bot first via /setup")
+        return
     
     # specify url
     patch_url = f"https://discord.com/api/v9/applications/{application_id}/users/{ctx.user.id}/identities/0/profile"
@@ -93,7 +102,6 @@ async def refresh(ctx):
         'Authorization': f'Bot {bot_token}'
     }
     
-    print(type(user_json))
     # use httpclient to patchasync
     try:
         response = requests.patch(url=patch_url, json=user_json, headers=header)
@@ -109,6 +117,40 @@ async def refresh(ctx):
         print(f"Error: failed to refresh {repr(e)}")
 
 
+@tree.command(
+    name = "listskinids",
+    description = "view the list of skins and their ids for a champion"
+)
+async def listskinids(ctx, champion_name: str):
+    
+    list = data.get_champion_skin_list(champion_name)
+    
+    if(list == None):
+        await ctx.response.send_message("Champion name not found!")
+        return
+
+    
+    await ctx.response.send_message(list)
+
+@tree.command(
+    name="setfavourite",
+    description="set the favourite champion and skin for your account, shown directly on the widget",
+)
+async def setfavourite(ctx, champion_name: str, skin_id: str):
+    
+    try:
+        data.set_favourite_champion(ctx.user.id, champion_name, skin_id)
+    except:
+        await ctx.response.send_message(f"Could not find champion: {champion_name} or skin id {skin_id}")    
+
+    
+    await ctx.response.send_message("Successfully updated favourite champion")
+    
+
+@tree.command(
+    name="clear",
+    description="Delete your data from the bot. (Does not unauthorise the application)",
+)
 async def clear(): # clear user's entry in db
     pass
 
