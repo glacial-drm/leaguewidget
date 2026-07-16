@@ -46,10 +46,10 @@ class setupButtons(discord.ui.View):
             # if not possible via dropdown or button, make update fave champ command instead
 
 @tree.command(
-    name="setup",
-    description="setup bot with your gamename and tagline"
+    name="riotsetup",
+    description="setup bot's riot functionality with your gamename and tagline"
 )
-async def setup(ctx, gamename:str, tagline:str):
+async def riotsetup(ctx, gamename:str, tagline:str):
     
     
     view = setupButtons(timeout=180)
@@ -77,20 +77,15 @@ async def setup(ctx, gamename:str, tagline:str):
     await ctx.response.send_message(f"Riot Account: {gamename}#{tagline} linked to Discord Account: {ctx.user.name}\n\nPlease also authorize the bot using the button below! Then add the widget to your profile!", view=view)
 
 @tree.command(
-    name="refresh",
+    name="refreshlol",
     description="reload the widget on your profile. use after having changed any of the fields",
 )
 async def refresh(ctx):
     
-    # create payload/content using json
-        # skip the username field?
-            # username field corresponds to making an application identity, relevant only for a self-made widget (?)
-
-        # our python patch function takes key value pairs, just parse json
     try:
         user_json = data.discordID_to_discordJSON(ctx.user.id)
-    except:
-        await ctx.response.send_message("Please setup the bot first via /setup")
+    except StopIteration:
+        await ctx.response.send_message("Please setup the bot first via /riotsetup")
         return
     
     # specify url
@@ -107,9 +102,9 @@ async def refresh(ctx):
         response = requests.patch(url=patch_url, json=user_json, headers=header)
         match response.status_code:
             case 201:
-                await ctx.response.send_message("Newly added")
+                await ctx.response.send_message("Created widget")
             case 204:
-                await ctx.response.send_message("Already added")
+                await ctx.response.send_message("Refreshed existing widget")
             case _:
                 print(f"Error: response code {response.status_code} {response.content}")
             
@@ -118,7 +113,7 @@ async def refresh(ctx):
 
 
 @tree.command(
-    name = "listskinids",
+    name = "listskinidslol",
     description = "view the list of skins and their ids for a champion"
 )
 async def listskinids(ctx, champion_name: str):
@@ -133,25 +128,28 @@ async def listskinids(ctx, champion_name: str):
     await ctx.response.send_message(list)
 
 @tree.command(
-    name="setfavourite",
-    description="set the favourite champion and skin for your account, shown directly on the widget",
+    name="setsplashartlol",
+    description="set the champion and skin for your widget splash art",
 )
 async def setfavourite(ctx, champion_name: str, skin_id: str):
     
     try:
-        data.set_favourite_champion(ctx.user.id, champion_name, skin_id)
+        data.set_splash_art(ctx.user.id, champion_name, skin_id)
     except:
         await ctx.response.send_message(f"Could not find champion: {champion_name} or skin id {skin_id}")    
 
     
-    await ctx.response.send_message("Successfully updated favourite champion")
+    await ctx.response.send_message("Successfully updated splash art")
     
 
 @tree.command(
-    name="clear",
-    description="Delete your data from the bot. (Does not unauthorise the application)",
+    name="clearlol",
+    description="Delete your League of Legends data from the bot. (Does not unauthorise the application)",
 )
-async def clear(): # clear user's entry in db
+async def clear(ctx): # clear user's entry in db
+    # TODO: make games modular by separating create_user() from LeagueData, so other game data can be added
+
+    data.delete_league_data(ctx.user.id)
     pass
 
 

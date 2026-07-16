@@ -16,93 +16,104 @@ class LeagueData:
 
         self.__db = Database.LeagueDB()
 
+    def delete_league_data(self, discordID:str):
+        
+        self.__db.collection.update_one( {'discordID': discordID}, { '$unset': { 'League of Legends': '' } } )
+
+
     def discordID_to_discordJSON(self, discordID: str):
         
-        user = self.__db.find_user_by_discordID(discordID)
-        
-        # Image elements
+        riotUser = self.__db.find_user_by_discordID(discordID)["Riot Games"]
+        leagueUser = riotUser["League of Legends"]
 
+        # Manipulated elements
+        iconMastery = 10 if leagueUser['top-mastery'] > 10 else (0 if leagueUser['top-mastery'] < 4 else leagueUser['top-mastery']) # icons for 1, 2, 3 and above 10 are truncated
+        
+        soloDuo = self.get_rank_solo_duo(leagueUser["puuid"]).split(" ")[0].lower()
+        flex = self.get_rank_flex(leagueUser["puuid"]).split(" ")[0].lower()
+        
+        # JSON
         json = {
         "data": {
             "dynamic": [
             {
                 "type": 1,
                 "name": "gamename#tagline",
-                "value": f"{user['gamename']}#{user['tagline']}"
+                "value": f"{riotUser['gamename']}#{riotUser['tagline']}"
             },
             {
                 "type": 1,
                 "name": "rank-solo-duo",
-                "value": f"{user['rank-solo-duo']}"
+                "value": f"{leagueUser['rank-solo-duo']}"
             },
             {
                 "type": 3,
                 "name": "img-solo-duo",
                 "value": {
-                "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
+                "url": f"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/{soloDuo}.png"
                 }
             },
             {
                 "type": 3,
                 "name": "champ-image",
                 "value": {
-                "url": f"https://ddragon.leagueoflegends.com/cdn/img/champion/loading/{user['favourite-champion']}_{user['skinID-favourite-champion']}.jpg"
+                "url": f"https://ddragon.leagueoflegends.com/cdn/img/champion/loading/{leagueUser['splash-art-champion']}_{leagueUser['splash-art-skinID']}.jpg"
                 }
             },
             {
                 "type": 1,
                 "name": "top-champion",
-                "value": f"{user['top-champion']}"
+                "value": f"{leagueUser['top-champion']}"
             },
             {
                 "type": 3,
                 "name": "img-top-champion",
                 "value": {
-                "url": f"https://ddragon.leagueoflegends.com/cdn/16.13.1/img/champion/{user['top-champion']}.png"
+                "url": f"https://ddragon.leagueoflegends.com/cdn/16.13.1/img/champion/{leagueUser['top-champion']}.png"
                 }
             },
             {
                 "type": 1,
                 "name": "total-mastery",
-                "value": f"{user['total-mastery']}"
+                "value": f"{leagueUser['total-mastery']}"
             },
             {
                 "type": 1,
                 "name": "rank-flex",
-                "value": f"{user['rank-flex']}"
+                "value": f"{leagueUser['rank-flex']}"
             },
             {
                 "type": 3,
                 "name": "img-flex",
                 "value": {
-                "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
+                "url": f"https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default/{flex}.png"
                 }
             },
             {
                 "type": 2,
                 "name": "games-won",
-                "value": f"{user['games-won']}"
+                "value": f"{leagueUser['games-won']}"
             },
             {
                 "type": 2,
                 "name": "games-played",
-                "value": f"{user['games-played']}"
+                "value": f"{leagueUser['games-played']}"
             },
             {
-                "type": 1,
+                "type": 2,
                 "name": "summoner-level",
-                "value": f"{user['summoner-level']}",
+                "value": f"{leagueUser['summoner-level']}",
             },
             {
                 "type": 1,
                 "name": "top-mastery",
-                "value": f"{user['top-mastery']}",
+                "value": f"{leagueUser['top-mastery']}",
             },
             {
                 "type": 3,
                 "name": "icon-mastery",
                 "value": {
-                "url": "https://raw.communitydragon.org/14.10/plugins/rcp-fe-lol-static-assets/global/default/images/ranked-emblem/emblem-bronze.png"
+                "url": f"https://raw.communitydragon.org/latest/game/assets/ux/mastery/legendarychampionmastery/masterycrest_level{iconMastery}.png"
                 }
             }
             ]
@@ -113,10 +124,11 @@ class LeagueData:
 
     def create_user(self, discordID: str, gamename: str, tagline: str):
 
-        if(self.__db.find_user_by_discordID(discordID)): # if user's discordID exists in database
-            raise Exception("User already has account linked")
-        else:
+        if(self.__db.find_user_by_discordID(discordID) == -1): # if user's discordID exists in database
             self.link_riot_to_discordID(discordID, gamename, tagline)
+            print(f"Adding {discordID} to database")
+        else:
+            raise Exception("User already has account linked")
 
     def link_riot_to_discordID(self, discordID: str, gamename: str, tagline: str):
         
@@ -129,37 +141,42 @@ class LeagueData:
             self.__db.collection.insert_one({
                 # Identifiers
                 "discordID": discordID,
-                "gamename": gamename,
-                "tagline": tagline,
-                
-                # API info
-                "puuid": puuid
-                })
+
+                "Riot Games":{
+                    "gamename": gamename,
+                    "tagline": tagline,
+
+                    "League of Legends": {
+                        # API info
+                        "puuid": puuid
+                    }
+                }})
             
             self.update_user(discordID)
 
     def update_user(self, discordID:str):
 
         user = self.__db.find_user_by_discordID(discordID)
-        puuid = user["puuid"]
-
-        newValues = {"$set": {
-                # Displayed stats
-                "top-champion": self.get_top_champ_name(puuid),
-                "top-mastery": self.get_top_champ_mastery(puuid),
-                "total-mastery": self.get_total_mastery(puuid),
-
-                "rank-solo-duo": self.get_rank_solo_duo(puuid),
-                "rank-flex": self.get_rank_flex(puuid),
-
-                "summoner-level": self.get_summoner_level(puuid),
-                "games-played": self.get_total_games_played(puuid),
-                "games-won": self.get_total_games_won(puuid)
-        }}
+        puuid = user["Riot Games"]["League of Legends"]["puuid"]
         
-        self.__db.collection.update_one({"discordID": user["discordID"]}, newValues)
-        
-    
+        stats = {
+            # Displayed stats
+            "splash-art-champion": self.get_top_champ_name(puuid),
+            "splash-art-skinID": 0,                        
+            
+            "top-champion": self.get_top_champ_name(puuid),
+            "top-mastery": self.get_top_champ_mastery(puuid),
+            "total-mastery": self.get_total_mastery(puuid),
+
+            "rank-solo-duo": self.get_rank_solo_duo(puuid),
+            "rank-flex": self.get_rank_flex(puuid),
+
+            "summoner-level": self.get_summoner_level(puuid),
+            "games-played": self.get_total_games_played(puuid),
+            "games-won": self.get_total_games_won(puuid)
+        }
+
+        self.__db.set_fields(discordID, "Riot Games.League of Legends", stats)
 
     def get_champion_skin_list(self, championName):
         
@@ -173,26 +190,23 @@ class LeagueData:
 
         return championSkins
 
-    def set_favourite_champion(self, discordID: str, championName: str, skinID: str):
+    def set_splash_art(self, discordID: str, championName: str, skinID: str):
         
-        # Check champion exists
+        # Check skinID for champion exists
         try:
-            champURL = f"https://ddragon.leagueoflegends.com/cdn/16.13.1/data/en_US/champion/{championName.capitalize()}.json"
-            call(champURL)
+            champURL = f"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{championName.capitalize()}_{skinID}.jpg"
+            call_image(champURL)
         except Exception as e:
             
-            print(f"Exception {e}: Champion not found (favourite champion)")
+            print(f"Exception {e}: Champion / skin ID not found (splash art)")
             return None
 
-        user = self.__db.find_user_by_discordID(discordID)
+        values = {
+            "splash-art-champion": championName,
+            "splash-art-skinID": skinID
+        }
 
-        newValues = {"$set": {
-                # Displayed stats
-                "favourite-champion": championName,
-                "skinID-favourite-champion": skinID
-        }}
-        
-        self.__db.collection.update_one({"discordID": user["discordID"]}, newValues)
+        self.__db.set_fields(discordID, "Riot Games.League of Legends", values)
 
     def get_summoner_level(self, puuid: str): # make sure it's in ms
         summonerURL = f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/{puuid}?api_key={self.__api_key}"
@@ -219,7 +233,7 @@ class LeagueData:
         except:
             pass
 
-        return str(gamesWon)
+        return gamesWon
 
     def get_total_games_played(self, puuid: str):
         rankURL = f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}?api_key={self.__api_key}"
@@ -241,7 +255,7 @@ class LeagueData:
         except:
             pass
 
-        return str(gamesPlayed)
+        return gamesPlayed
 
 
 
@@ -255,7 +269,7 @@ class LeagueData:
             return(f"Unranked")
         
         
-        return f"{flex['tier']} {flex['rank']}"
+        return f"{flex['tier'].capitalize()} {flex['rank']}"
 
     def get_rank_solo_duo(self, puuid: str):
         rankURL = f"https://euw1.api.riotgames.com/lol/league/v4/entries/by-puuid/{puuid}?api_key={self.__api_key}"
@@ -266,7 +280,7 @@ class LeagueData:
         except:
             return(f"Unranked")
         
-        return f"{solo_duo['tier']} {solo_duo['rank']}"
+        return f"{solo_duo['tier'].capitalize()} {solo_duo['rank']}"
     
 
 
@@ -282,7 +296,7 @@ class LeagueData:
         topMasteryURL = f"https://euw1.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/{puuid}/top?count=1&api_key={self.__api_key}"
         
         topChampion = call(topMasteryURL)[0]
-        mastery = str(topChampion["championLevel"])
+        mastery = topChampion["championLevel"]
         
         return mastery
     
@@ -338,12 +352,19 @@ def call(url: str):
             return None
     except requests.exceptions.RequestException as e:
         
-        print('Exception:', e)
+        print(f'Exception: {e} (RequestException during call)')
         return None
 
-    
+def call_image(url: str):
+    try:
+        resp = requests.get(url)
+        resp.raise_for_status()  # Make sure the request didn't fail
+    except requests.exceptions.HTTPError as e:
+        print(f'Exception: {e} (Image call failed)')
+        return None
+
 x = LeagueData()
-# x.create_user("414120508632596482", "Glacial", "Zelda")
+# x.create_user(414120508632596482, "Glacial", "Zelda")
+# x.set_splash_art(414120508632596482, 'Gwen', 11)
 # print(x.get_champion_skin_list("Gwen"))
-# x.set_favourite_champion("414120508632596482", 'Gwen', '11')
-# x.discordID_to_JSON("414120508632596482")
+# print(x.discordID_to_discordJSON(414120508632596482))
